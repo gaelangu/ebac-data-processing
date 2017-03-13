@@ -1,13 +1,14 @@
 ---
-title: "data-processing"
-author: "Gaelan Gu"
-date: "13/03/2017"
+title: "Data Processing Assignment"
+author: "Gaelan Gu, Sunil Prakash, Wang Ruoshi, Yu Yue"
 output: 
   md_document:
     variant: markdown_github
 ---
 ### Introduction
+We will be preparing the salary dataset, extracted from the 1994 US Census, for a logistic regression. 
 
+We will determine whether a person makes over 50k a year; class column will be the dependent variable.
 
 ### Data Import
 ```{r}

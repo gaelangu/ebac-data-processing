@@ -1,5 +1,9 @@
 ### Introduction
 
+We will be preparing the salary dataset, extracted from the 1994 US Census, for a logistic regression.
+
+We will determine whether a person makes over 50k a year; class column will be the dependent variable.
+
 ### Data Import
 
 ``` r
