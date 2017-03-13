@@ -1,0 +1,55 @@
+---
+title: "data-processing"
+author: "Gaelan Gu"
+date: "13/03/2017"
+output: md_document
+---
+
+### Data Import
+```{r}
+setwd('~/#Data/')
+train = read.csv('salary-train.csv')
+test = read.csv('salary-test.csv')
+summary(train)
+summary(test)
+```
+
+### Setting Entries with Question Marks as NA Values
+```{r}
+# train set
+train$workclass = as.factor(gsub('?', NA, train$workclass, fixed = T))
+train$native.country = as.factor(gsub('?', NA, train$native.country, fixed = T))
+train$occupation = as.factor(gsub('?', NA, train$occupation, fixed = T))
+
+# test set
+test$workclass = as.factor(gsub('?', NA, test$workclass, fixed = T))
+test$native.country = as.factor(gsub('?', NA, test$native.country, fixed = T))
+test$occupation = as.factor(gsub('?', NA, test$occupation, fixed = T))
+```
+
+### Removing Incomplete Cases
+```{r}
+train = train[complete.cases(train), ]
+test = test[complete.cases(test), ]
+str(train)
+str(test)
+```
+
+### Logistic Classifier
+```{r}
+fit = glm(formula = class ~ .,
+          family = binomial,
+          data = train)
+```
+
+### Prediction and Confusion Matrix
+```{r}
+# Predicting the Test set results
+prob_pred = predict(fit, type = 'response', newdata = test[-14])
+y_pred = ifelse(prob_pred > 0.5, 1, 0)
+
+### Confusion Matrix
+cm = table(test[, 14], y_pred)
+cm
+```
+Model has a 84.8% accuracy rate.
