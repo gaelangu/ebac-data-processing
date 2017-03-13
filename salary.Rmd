@@ -2,12 +2,15 @@
 title: "data-processing"
 author: "Gaelan Gu"
 date: "13/03/2017"
-output: md_document
+output: 
+  md_document:
+    variant: markdown_github
 ---
+### Introduction
+
 
 ### Data Import
 ```{r}
-setwd('~/#Data/')
 train = read.csv('salary-train.csv')
 test = read.csv('salary-test.csv')
 summary(train)
@@ -37,9 +40,9 @@ str(test)
 
 ### Logistic Classifier
 ```{r}
-fit = glm(formula = class ~ .,
+fit = suppressWarnings(glm(formula = class ~ .,
           family = binomial,
-          data = train)
+          data = train))
 ```
 
 ### Prediction and Confusion Matrix

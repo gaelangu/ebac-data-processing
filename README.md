@@ -1,9 +1,12 @@
+### Introduction
+
 ### Data Import
 
-    setwd('~/#Data/')
-    train = read.csv('salary-train.csv')
-    test = read.csv('salary-test.csv')
-    summary(train)
+``` r
+train = read.csv('salary-train.csv')
+test = read.csv('salary-test.csv')
+summary(train)
+```
 
     ##       age                    workclass         fnlwgt       
     ##  Min.   :17.00    Private         :22696   Min.   :  12285  
@@ -46,7 +49,9 @@
     ##  Max.   :4356.0   Max.   :99.00    Canada       :  121                 
     ##                                   (Other)       : 1709
 
-    summary(test)
+``` r
+summary(test)
+```
 
     ##       age                    workclass         fnlwgt       
     ##  Min.   :17.00    Private         :11210   Min.   :  13492  
@@ -91,21 +96,25 @@
 
 ### Setting Entries with Question Marks as NA Values
 
-    # train set
-    train$workclass = as.factor(gsub('?', NA, train$workclass, fixed = T))
-    train$native.country = as.factor(gsub('?', NA, train$native.country, fixed = T))
-    train$occupation = as.factor(gsub('?', NA, train$occupation, fixed = T))
+``` r
+# train set
+train$workclass = as.factor(gsub('?', NA, train$workclass, fixed = T))
+train$native.country = as.factor(gsub('?', NA, train$native.country, fixed = T))
+train$occupation = as.factor(gsub('?', NA, train$occupation, fixed = T))
 
-    # test set
-    test$workclass = as.factor(gsub('?', NA, test$workclass, fixed = T))
-    test$native.country = as.factor(gsub('?', NA, test$native.country, fixed = T))
-    test$occupation = as.factor(gsub('?', NA, test$occupation, fixed = T))
+# test set
+test$workclass = as.factor(gsub('?', NA, test$workclass, fixed = T))
+test$native.country = as.factor(gsub('?', NA, test$native.country, fixed = T))
+test$occupation = as.factor(gsub('?', NA, test$occupation, fixed = T))
+```
 
 ### Removing Incomplete Cases
 
-    train = train[complete.cases(train), ]
-    test = test[complete.cases(test), ]
-    str(train)
+``` r
+train = train[complete.cases(train), ]
+test = test[complete.cases(test), ]
+str(train)
+```
 
     ## 'data.frame':    30162 obs. of  14 variables:
     ##  $ age           : int  39 50 38 53 28 37 49 52 31 42 ...
@@ -123,7 +132,9 @@
     ##  $ native.country: Factor w/ 41 levels " Cambodia"," Canada",..: 39 39 39 39 5 39 23 39 39 39 ...
     ##  $ class         : Factor w/ 2 levels " <=50K"," >50K": 1 1 1 1 1 1 1 2 2 2 ...
 
-    str(test)
+``` r
+str(test)
+```
 
     ## 'data.frame':    15060 obs. of  14 variables:
     ##  $ age           : int  25 38 28 44 34 63 24 55 65 36 ...
@@ -143,21 +154,23 @@
 
 ### Logistic Classifier
 
-    fit = glm(formula = class ~ .,
-              family = binomial,
-              data = train)
-
-    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+``` r
+fit = suppressWarnings(glm(formula = class ~ .,
+          family = binomial,
+          data = train))
+```
 
 ### Prediction and Confusion Matrix
 
-    # Predicting the Test set results
-    prob_pred = predict(fit, type = 'response', newdata = test[-14])
-    y_pred = ifelse(prob_pred > 0.5, 1, 0)
+``` r
+# Predicting the Test set results
+prob_pred = predict(fit, type = 'response', newdata = test[-14])
+y_pred = ifelse(prob_pred > 0.5, 1, 0)
 
-    ### Confusion Matrix
-    cm = table(test[, 14], y_pred)
-    cm
+### Confusion Matrix
+cm = table(test[, 14], y_pred)
+cm
+```
 
     ##          y_pred
     ##               0     1
