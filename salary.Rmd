@@ -14,9 +14,13 @@ We will determine whether a person makes over 50k a year; class column will be t
 ```{r}
 train = read.csv('salary-train.csv')
 test = read.csv('salary-test.csv')
-summary(train)
-summary(test)
+str(train)
+str(test)
 ```
+
+We first import our datasets and determine which columns contain missing values.
+
+From a glance, we can tell that the *workclass*, *occupation* and *native.country* columns contain missing values, indicated by question marks.
 
 ### Setting Entries with Question Marks as NA Values
 ```{r}
@@ -31,6 +35,8 @@ test$native.country = as.factor(gsub('?', NA, test$native.country, fixed = T))
 test$occupation = as.factor(gsub('?', NA, test$occupation, fixed = T))
 ```
 
+Since the missing values exist in both the training and testing datasets, therefore we have to indicate them as NA values before we may exclude them.
+
 ### Removing Incomplete Cases
 ```{r}
 train = train[complete.cases(train), ]
@@ -39,6 +45,8 @@ str(train)
 str(test)
 ```
 
+We run the *complete.cases* function to remove the NA values from both datasets. After that we use the *str* function again to ascertain that the variables are in the formats we need, without anymore missing entries.
+
 ### Logistic Classifier
 ```{r}
 fit = suppressWarnings(glm(formula = class ~ .,
@@ -46,14 +54,21 @@ fit = suppressWarnings(glm(formula = class ~ .,
           data = train))
 ```
 
-### Prediction and Confusion Matrix
+We start to train our training set using a logistic classifier, with *class* as our target variable. We use the rest of the variables as input.
+
+### Prediction the Testing Set Results
 ```{r}
-# Predicting the Test set results
 prob_pred = predict(fit, type = 'response', newdata = test[-14])
 y_pred = ifelse(prob_pred > 0.5, 1, 0)
+```
 
+With our classifier, we predict a result using our test set.
+
+### Confusion Matrix
+```{r}
 ### Confusion Matrix
 cm = table(test[, 14], y_pred)
 cm
 ```
-Model has a 84.8% accuracy rate.
+
+Model has a _15.2%_ error rate.
