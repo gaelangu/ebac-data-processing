@@ -15,8 +15,148 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r loadData}
 
+strain <- read.csv("salary-train.csv");
 stest <- read.csv("salary-test.csv");
 
-str(stest)
+
+str(strain)
 
 ```
+### Data Cleaning
+
+```{r}
+
+strain$workclass = as.factor(gsub('?', NA, strain$workclass, fixed = T))
+strain$education = as.factor(gsub('?', NA, strain$education, fixed = T))
+#strain$material = as.factor(gsub('?', NA, strain$material, fixed = T))
+strain$occupation = as.factor(gsub('?', NA, strain$occupation, fixed = T))
+strain$relationship = as.factor(gsub('?', NA, strain$relationship, fixed = T))
+strain$race = as.factor(gsub('?', NA, strain$race, fixed = T))
+strain$sex = as.factor(gsub('?', NA, strain$sex, fixed = T))
+strain$native.country = as.factor(gsub('?', NA, strain$native.country, fixed = T))
+strain$class = as.factor(gsub('?', NA, strain$class, fixed = T))
+
+
+stest$workclass = as.factor(gsub('?', NA, stest$workclass, fixed = T))
+stest$education = as.factor(gsub('?', NA, stest$education, fixed = T))
+#strain$material = as.factor(gsub('?', NA, strain$material, fixed = T))
+stest$occupation = as.factor(gsub('?', NA, stest$occupation, fixed = T))
+stest$relationship = as.factor(gsub('?', NA, stest$relationship, fixed = T))
+stest$race = as.factor(gsub('?', NA, stest$race, fixed = T))
+stest$sex = as.factor(gsub('?', NA, stest$sex, fixed = T))
+stest$native.country = as.factor(gsub('?', NA, stest$native.country, fixed = T))
+stest$class = as.factor(gsub('?', NA, stest$class, fixed = T))
+
+#grep('\\?',strain$workclass)
+strain <- na.omit(strain)
+stest <- na.omit(stest)
+
+```
+
+
+
+### Regression 
+
+```{r}
+
+model <- glm(class ~.,family=binomial(link='logit'),data=strain)
+
+plot(model)
+
+
+```
+
+```{r}
+anova(model, test="Chisq")
+```
+
+```{r}
+#Testing
+
+fitted.results <- predict(model,newdata=stest[-14],type='response')
+fitted.results <- ifelse(fitted.results > 0.5,'>50K.','<=50K.')
+xtab <- table(fitted.results,stest$class)
+
+avgAccuracy = sum(diag(xtab)) / sum(xtab)
+avgAccuracy
+
+
+
+```
+the first model provides 84.76% accuracy
+
+Now lets do some more cleaning, looks like two columns capital.gain and capital.loss have many 0 values, which could be result of missing data only,  lets get rid of these columns and try again
+
+```{r}
+
+strain2 <- strain[-10]
+strain2 <- strain2[-10]
+
+stest2 <- stest[-10]
+stest2 <- stest2[-10]
+
+model2 <- glm(class ~.,family=binomial(link='logit'),data=strain2)
+
+fitted.results2 <- predict(model2,newdata=stest2[-12],type='response')
+fitted.results2 <- ifelse(fitted.results2 > 0.5,'>50K.','<=50K.')
+xtab <- table(fitted.results2,stest2$class)
+
+avgAccuracy = sum(diag(xtab)) / sum(xtab)
+avgAccuracy
+
+
+```
+the accuracy reduces, on removing the two columns to 82.96 %.
+
+lets try doing co-relation analysis and pca to find some  correlated fields  and reduction
+
+```{r}
+library(dummies)
+
+new_strain <- dummy.data.frame(strain, names = c("workclass","education",
+                                "marital","occupation",
+                                "relationship","race","sex","native.country"))
+new_stest <- dummy.data.frame(stest, names = c("workclass","education",
+                                "marital","occupation",
+                                "relationship","race","sex","native.country"))
+
+names(new_strain)
+
+
+pca <- prcomp(new_strain[-104])
+pca_test <- prcomp(new_stest[-103])
+
+screeplot(pca, type = 'l')
+
+```
+
+looks like only 2 pca is enogh for 99% varience
+
+```{r}
+
+strain3 <- strain
+stest3 <- stest
+
+strain.pca <- data.frame(pca$x)
+stest.pca <- data.frame(pca_test$x)
+
+strain3$PC1 <- strain.pca$PC1
+strain3$PC2 <- strain.pca$PC2
+
+
+stest3$PC1 <- stest.pca$PC1
+stest3$PC2 <- stest.pca$PC2
+
+
+
+model3 <- glm(class ~.,family=binomial(link='logit'),data=strain3)
+
+fitted.results3 <- predict(model3,newdata=stest3[-14],type='response')
+fitted.results3 <- ifelse(fitted.results3 > 0.5,'>50K.','<=50K.')
+xtab <- table(fitted.results3,stest3$class)
+
+avgAccuracy = sum(diag(xtab)) / sum(xtab)
+avgAccuracy
+
+```
+No change
