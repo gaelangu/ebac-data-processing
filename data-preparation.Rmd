@@ -1,0 +1,22 @@
+---
+title: "DataPreparation"
+author: "Sunil Prakash"
+date: "2/21/2017"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Preparation and Cleaning Workshop
+
+
+
+```{r loadData}
+
+stest <- read.csv("salary-test.csv");
+
+str(stest)
+
+```
