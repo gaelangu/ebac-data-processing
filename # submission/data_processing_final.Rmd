@@ -1,0 +1,263 @@
+---
+title: "Data Processing Assignment"
+author: "Gaelan Gu, Sunil Prakash, Wang Ruoshi, Yu Yue"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Introduction
+We will be preparing the salary dataset, extracted from the 1994 US Census, for a logistic regression. 
+
+We will determine whether a person makes over 50k a year; *class* will be the dependent variable.
+
+### Data Import
+```{r}
+train = read.csv('salary-train.csv')
+test = read.csv('salary-test.csv')
+str(train)
+str(test)
+```
+
+We first import our datasets and determine which columns contain missing values.
+
+From a glance, we can tell that the *workclass*, *occupation* and *native.country* columns contain missing values, indicated by question marks.
+
+### Setting Entries with Question Marks as NA Values
+```{r}
+# train set
+train$workclass = as.factor(gsub('?', NA, train$workclass, fixed = T))
+train$native.country = as.factor(gsub('?', NA, train$native.country, fixed = T))
+train$occupation = as.factor(gsub('?', NA, train$occupation, fixed = T))
+
+# test set
+test$workclass = as.factor(gsub('?', NA, test$workclass, fixed = T))
+test$native.country = as.factor(gsub('?', NA, test$native.country, fixed = T))
+test$occupation = as.factor(gsub('?', NA, test$occupation, fixed = T))
+```
+
+Since the missing values exist in both the training and testing datasets, therefore we have to indicate them as NA values before we may exclude them.
+
+### Removing Incomplete Cases
+```{r}
+train = train[complete.cases(train), ]
+test = test[complete.cases(test), ]
+str(train)
+str(test)
+```
+
+We run the *complete.cases* function to remove the NA values from both datasets. After that we use the *str* function again to ascertain that the variables are in the formats we need, without anymore missing entries.
+
+## Full Model
+```{r}
+fit = suppressWarnings(glm(formula = class ~ .,
+          family = binomial,
+          data = train))
+```
+
+We start to train our training set using a logistic classifier, with *class* as our target variable. We use the rest of the variables as input.
+
+### Prediction the Test Set Results
+```{r}
+prob_pred = predict(fit, type = 'response', newdata = test[-14])
+y_pred = ifelse(prob_pred > 0.5, '>50K', '<=50K')
+
+# Confusion Matrix
+cm = table(test[, 14], y_pred)
+cm
+```
+
+### Computing the Accuracy and Error Rates
+```{r}
+acc = sum(diag(cm)) / sum(cm)
+acc
+
+err = 1 - acc
+err
+```
+
+Model has a **84.76%** accuracy rate / **15.24%** error rate.
+
+Let us see if we can improve the error rate through feature selection.
+
+```{r}
+summary(fit)
+```
+
+
+## Model 1
+We will try dropping the *race* variable as it does not appear to be significant from the p-values (mostly > 0.05).
+```{r}
+fit_1 = suppressWarnings(glm(formula = class ~ . - race,
+          family = binomial,
+          data = train))
+
+summary(fit_1)
+```
+
+### Prediction the Test Set Results
+```{r}
+prob_pred_1 = predict(fit_1, type = 'response', newdata = test[-14])
+y_pred_1 = ifelse(prob_pred_1 > 0.5, '>50K', '<=50K')
+
+# Confusion Matrix 1
+cm_1 = table(test[, 14], y_pred_1)
+cm_1
+```
+
+### Computing the Accuracy and Error Rates
+```{r}
+acc_1 = sum(diag(cm_1)) / sum(cm_1)
+acc_1
+
+err_1 = 1 - acc_1
+err_1
+```
+
+This model has an accuracy rate of **84.77%**, which is only very slightly improved.
+
+Model 1 is our best model so far.
+
+
+## Model 2
+We remove the *relationship* variable as well as it appears to be a less significant variable.
+```{r}
+fit_2 = suppressWarnings(glm(formula = class ~ . - race - relationship,
+          family = binomial,
+          data = train))
+
+summary(fit_2)
+```
+
+### Prediction the Test Set Results
+```{r}
+prob_pred_2 = predict(fit_2, type = 'response', newdata = test[-14])
+y_pred_2 = ifelse(prob_pred_2 > 0.5, '>50K', '<=50K')
+
+cm_2 = table(test[, 14], y_pred_2)
+cm_2
+```
+
+### Computing the Accuracy and Error Rates
+```{r}
+acc_2 = sum(diag(cm_2)) / sum(cm_2)
+acc_2
+
+err_2 = 1 - acc_2
+err_2
+```
+
+However, accuracy rate has decreased to **84.66**.
+
+## Model 3
+We will do more data cleaning, for it appears that there are many zero values present in the *capital.loss* and *capital.gain* columns. Let's remove these from our best model so far (Model 1) and see if the result improves.
+```{r}
+fit_3 = suppressWarnings(glm(formula = class ~ . - race - capital.gain - capital.loss,
+          family = binomial,
+          data = train))
+
+summary(fit_3)
+```
+
+AIC appears to have risen, which is a sign of a worse fit.
+
+### Prediction the Test Set Results
+```{r}
+prob_pred_3 = predict(fit_3, type = 'response', newdata = test[-14])
+y_pred_3 = ifelse(prob_pred_3 > 0.5, '>50K', '<=50K')
+
+cm_3 = table(test[, 14], y_pred_3)
+cm_3
+```
+
+### Computing the Accuracy and Error Rates
+```{r}
+acc_3 = sum(diag(cm_3)) / sum(cm_3)
+acc_3
+
+err_3 = 1 - acc_3
+err_3
+```
+
+Accuracy rate has decreased to **82.99%** in this case.
+
+## Model 4
+We will try feature transformation in this last model, by means of Principal Component Analysis (PCA). To prepare our datasets for this, we will need to create dummy variables.
+
+```{r}
+# install.packages('dummies')
+library(dummies)
+
+train_4 = dummy.data.frame(train, names = c('workclass','education', 'marital','occupation',
+                                            'relationship','race','sex','native.country'))
+test_4 = dummy.data.frame(test, names = c('workclass','education', 'marital','occupation',
+                                            'relationship','race','sex','native.country'))
+
+train_4_pca = prcomp(train_4[-104])
+test_4_pca = prcomp(test_4[-103])
+
+screeplot(train_4_pca, type = 'l', main = 'PCA for Model 4')
+```
+```{r}
+summary(train_4_pca)
+```
+
+The first 2 principal components are sufficient to explain most, if not all of the variation in the variables. So we will use them for the fit.
+
+```{r}
+# Joining PC1 and PC2 columns to the train_4 dataset
+train_4_pca_df = as.data.frame(train_4_pca$x)
+train_4$PC1 = train_4_pca_df$PC1
+train_4$PC2 = train_4_pca_df$PC2
+
+# Joining PC1 and PC2 columns to the test_4 dataset
+test_4_pca_df = as.data.frame(test_4_pca$x)
+test_4$PC1 = test_4_pca_df$PC1
+test_4$PC2 = test_4_pca_df$PC2
+
+fit_4 = suppressWarnings(glm(class ~ PC1 + PC2,
+                             family = 'binomial',
+                             data = train_4))
+
+summary(fit_4)
+```
+
+### Prediction the Test Set Results
+```{r}
+prob_pred_4 = predict(fit_4, type = 'response', newdata = test_4[c(104, 105)])
+y_pred_4 = ifelse(prob_pred_4 > 0.5, '>50K', '<=50K')
+
+cm_4 = table(test_4[, 103], y_pred_4)
+cm_4
+```
+
+### Computing the Accuracy and Error Rates
+```{r}
+acc_4 = sum(diag(cm_4)) / sum(cm_4)
+acc_4
+
+err_4 = 1 - acc_4
+err_4
+```
+
+Accuracy rate has decreased to **79.22%** for this model, which shows that feature transformation does not improve our results.
+
+## Summary & Conclusion
+We have used the following models in our analysis to predict the *class* variable:
+
+  * Full Model (fit) - using **all** variables
+  
+  * Model 1 (fit_1) - using all **except** *race*
+  
+  * Model 2 (fit_2) - using all **except** *race* and *relationship*
+  
+  * Model 3 (fit_3) - using all **except** *race*, *capital.gain* and *capital.loss*
+  
+  * Model 4 (fit_4) - using 1st 2 components of PCA
+  
+
+We can conclude that **Model 1** produces the best result, with the *race* variable excluded. This model has the highest accuracy rate of **84.77%**.

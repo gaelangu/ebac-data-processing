@@ -114,7 +114,8 @@ str(test)
 
 We run the *complete.cases* function to remove the NA values from both datasets. After that we use the *str* function again to ascertain that the variables are in the formats we need, without anymore missing entries.
 
-### Logistic Classifier
+Full Model
+----------
 
 ``` r
 fit = suppressWarnings(glm(formula = class ~ .,
@@ -124,18 +125,13 @@ fit = suppressWarnings(glm(formula = class ~ .,
 
 We start to train our training set using a logistic classifier, with *class* as our target variable. We use the rest of the variables as input.
 
-### Prediction the Testing Set Results
+### Prediction the Test Set Results
 
 ``` r
 prob_pred = predict(fit, type = 'response', newdata = test[-14])
 y_pred = ifelse(prob_pred > 0.5, '>50K', '<=50K')
-```
 
-With our classifier, we predict a result using our test set.
-
-### Confusion Matrix
-
-``` r
+# Confusion Matrix
 cm = table(test[, 14], y_pred)
 cm
 ```
@@ -145,7 +141,23 @@ cm
     ##    <=50K. 10530   830
     ##    >50K.   1465  2235
 
-Model has a **15.24%** error rate.
+### Computing the Accuracy and Error Rates
+
+``` r
+acc = sum(diag(cm)) / sum(cm)
+acc
+```
+
+    ## [1] 0.8476096
+
+``` r
+err = 1 - acc
+err
+```
+
+    ## [1] 0.1523904
+
+Model has a **84.76%** accuracy rate / **15.24%** error rate.
 
 Let us see if we can improve the error rate through feature selection.
 
@@ -367,9 +379,10 @@ summary(fit)
     ## 
     ## Number of Fisher Scoring iterations: 13
 
-We will try dropping the *race* variable as it does not appear to be significant from the p-values (mostly &gt; 0.05).
+Model 1
+-------
 
-### New Model 1
+We will try dropping the *race* variable as it does not appear to be significant from the p-values (mostly &gt; 0.05).
 
 ``` r
 fit_1 = suppressWarnings(glm(formula = class ~ . - race,
@@ -585,12 +598,13 @@ summary(fit_1)
     ## 
     ## Number of Fisher Scoring iterations: 13
 
-### Confusion Matrix for New Model 1
+### Prediction the Test Set Results
 
 ``` r
 prob_pred_1 = predict(fit_1, type = 'response', newdata = test[-14])
 y_pred_1 = ifelse(prob_pred_1 > 0.5, '>50K', '<=50K')
 
+# Confusion Matrix 1
 cm_1 = table(test[, 14], y_pred_1)
 cm_1
 ```
@@ -600,9 +614,30 @@ cm_1
     ##    <=50K. 10537   823
     ##    >50K.   1470  2230
 
-New model has a **15.23%** error rate, which is only slightly improved.
+### Computing the Accuracy and Error Rates
 
-### New Model 2
+``` r
+acc_1 = sum(diag(cm_1)) / sum(cm_1)
+acc_1
+```
+
+    ## [1] 0.8477424
+
+``` r
+err_1 = 1 - acc_1
+err_1
+```
+
+    ## [1] 0.1522576
+
+This model has an accuracy rate of **84.77%**, which is only very slightly improved.
+
+Model 1 is our best model so far.
+
+Model 2
+-------
+
+We remove the *relationship* variable as well as it appears to be a less significant variable.
 
 ``` r
 fit_2 = suppressWarnings(glm(formula = class ~ . - race - relationship,
@@ -809,9 +844,7 @@ summary(fit_2)
     ## 
     ## Number of Fisher Scoring iterations: 13
 
-We remove the *relationship* variable as well as it appears to be a less significant variable.
-
-### Confusion Matrix for New Model 2
+### Prediction the Test Set Results
 
 ``` r
 prob_pred_2 = predict(fit_2, type = 'response', newdata = test[-14])
@@ -826,4 +859,465 @@ cm_2
     ##    <=50K. 10554   806
     ##    >50K.   1504  2196
 
-However, error rate has risen to **15.34%**, so we can stick to New Model 1 with the *race* variable removed.
+### Computing the Accuracy and Error Rates
+
+``` r
+acc_2 = sum(diag(cm_2)) / sum(cm_2)
+acc_2
+```
+
+    ## [1] 0.8466135
+
+``` r
+err_2 = 1 - acc_2
+err_2
+```
+
+    ## [1] 0.1533865
+
+However, accuracy rate has decreased to **84.66**.
+
+Model 3
+-------
+
+We will do more data cleaning, for it appears that there are many zero values present in the *capital.loss* and *capital.gain* columns. Let's remove these from our best model so far (Model 1) and see if the result improves.
+
+``` r
+fit_3 = suppressWarnings(glm(formula = class ~ . - race - capital.gain - capital.loss,
+          family = binomial,
+          data = train))
+
+summary(fit_3)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = class ~ . - race - capital.gain - capital.loss, 
+    ##     family = binomial, data = train)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -2.6754  -0.5672  -0.2165  -0.0005   3.7071  
+    ## 
+    ## Coefficients:
+    ##                                             Estimate Std. Error z value
+    ## (Intercept)                               -5.511e+00  6.843e-01  -8.053
+    ## age                                        2.901e-02  1.627e-03  17.834
+    ## workclass Local-gov                       -6.543e-01  1.078e-01  -6.071
+    ## workclass Private                         -4.388e-01  8.910e-02  -4.925
+    ## workclass Self-emp-inc                    -1.950e-01  1.171e-01  -1.665
+    ## workclass Self-emp-not-inc                -8.986e-01  1.043e-01  -8.616
+    ## workclass State-gov                       -8.377e-01  1.201e-01  -6.977
+    ## workclass Without-pay                     -1.337e+01  1.953e+02  -0.068
+    ## fnlwgt                                     7.609e-07  1.658e-07   4.590
+    ## education 11th                             1.601e-01  2.058e-01   0.778
+    ## education 12th                             5.000e-01  2.615e-01   1.912
+    ## education 1st-4th                         -4.230e-01  4.704e-01  -0.899
+    ## education 5th-6th                         -3.329e-01  3.502e-01  -0.951
+    ## education 7th-8th                         -5.529e-01  2.352e-01  -2.351
+    ## education 9th                             -2.938e-01  2.623e-01  -1.120
+    ## education Assoc-acdm                       1.338e+00  1.715e-01   7.799
+    ## education Assoc-voc                        1.362e+00  1.647e-01   8.272
+    ## education Bachelors                        2.005e+00  1.535e-01  13.064
+    ## education Doctorate                        3.105e+00  2.112e-01  14.701
+    ## education HS-grad                          8.293e-01  1.493e-01   5.554
+    ## education Masters                          2.426e+00  1.638e-01  14.814
+    ## education Preschool                       -1.112e+01  1.085e+02  -0.103
+    ## education Prof-school                      3.107e+00  1.954e-01  15.901
+    ## education Some-college                     1.162e+00  1.515e-01   7.669
+    ## marital Married-AF-spouse                  2.517e+00  5.661e-01   4.446
+    ## marital Married-civ-spouse                 1.995e+00  2.662e-01   7.492
+    ## marital Married-spouse-absent             -3.755e-02  2.212e-01  -0.170
+    ## marital Never-married                     -4.553e-01  8.161e-02  -5.579
+    ## marital Separated                         -8.774e-02  1.511e-01  -0.581
+    ## marital Widowed                            1.759e-01  1.439e-01   1.222
+    ## occupation Armed-Forces                   -9.862e-01  1.282e+00  -0.769
+    ## occupation Craft-repair                    6.640e-02  7.668e-02   0.866
+    ## occupation Exec-managerial                 8.242e-01  7.359e-02  11.200
+    ## occupation Farming-fishing                -9.415e-01  1.319e-01  -7.138
+    ## occupation Handlers-cleaners              -7.195e-01  1.384e-01  -5.200
+    ## occupation Machine-op-inspct              -3.031e-01  9.832e-02  -3.083
+    ## occupation Other-service                  -9.176e-01  1.139e-01  -8.058
+    ## occupation Priv-house-serv                -2.541e+00  1.113e+00  -2.282
+    ## occupation Prof-specialty                  5.255e-01  7.798e-02   6.739
+    ## occupation Protective-serv                 5.474e-01  1.210e-01   4.523
+    ## occupation Sales                           3.105e-01  7.850e-02   3.955
+    ## occupation Tech-support                    6.265e-01  1.071e-01   5.852
+    ## occupation Transport-moving               -1.221e-01  9.513e-02  -1.284
+    ## relationship Not-in-family                 4.550e-01  2.636e-01   1.726
+    ## relationship Other-relative               -4.417e-01  2.392e-01  -1.846
+    ## relationship Own-child                    -7.567e-01  2.643e-01  -2.863
+    ## relationship Unmarried                     2.608e-01  2.771e-01   0.941
+    ## relationship Wife                          1.366e+00  9.874e-02  13.836
+    ## sex Male                                   8.678e-01  7.387e-02  11.747
+    ## hours.per.week                             3.013e-02  1.622e-03  18.572
+    ## native.country Canada                     -1.095e+00  6.434e-01  -1.702
+    ## native.country China                      -1.926e+00  6.824e-01  -2.823
+    ## native.country Columbia                   -3.778e+00  1.016e+00  -3.718
+    ## native.country Cuba                       -1.126e+00  6.584e-01  -1.710
+    ## native.country Dominican-Republic         -2.779e+00  9.639e-01  -2.883
+    ## native.country Ecuador                    -1.828e+00  8.875e-01  -2.060
+    ## native.country El-Salvador                -1.740e+00  7.417e-01  -2.346
+    ## native.country England                    -1.076e+00  6.579e-01  -1.636
+    ## native.country France                     -8.657e-01  7.876e-01  -1.099
+    ## native.country Germany                    -9.555e-01  6.322e-01  -1.511
+    ## native.country Greece                     -2.058e+00  7.774e-01  -2.647
+    ## native.country Guatemala                  -1.592e+00  8.907e-01  -1.788
+    ## native.country Haiti                      -1.669e+00  8.821e-01  -1.893
+    ## native.country Holand-Netherlands         -1.073e+01  8.827e+02  -0.012
+    ## native.country Honduras                   -2.386e+00  2.100e+00  -1.136
+    ## native.country Hong                       -1.603e+00  8.770e-01  -1.827
+    ## native.country Hungary                    -1.481e+00  9.316e-01  -1.590
+    ## native.country India                      -1.776e+00  6.423e-01  -2.766
+    ## native.country Iran                       -1.322e+00  7.065e-01  -1.871
+    ## native.country Ireland                    -8.642e-01  8.525e-01  -1.014
+    ## native.country Italy                      -6.506e-01  6.646e-01  -0.979
+    ## native.country Jamaica                    -1.628e+00  7.172e-01  -2.270
+    ## native.country Japan                      -1.067e+00  6.967e-01  -1.531
+    ## native.country Laos                       -2.080e+00  1.052e+00  -1.978
+    ## native.country Mexico                     -1.987e+00  6.198e-01  -3.206
+    ## native.country Nicaragua                  -2.281e+00  1.001e+00  -2.278
+    ## native.country Outlying-US(Guam-USVI-etc) -1.400e+01  2.084e+02  -0.067
+    ## native.country Peru                       -2.286e+00  9.909e-01  -2.308
+    ## native.country Philippines                -9.729e-01  6.218e-01  -1.565
+    ## native.country Poland                     -1.470e+00  7.090e-01  -2.074
+    ## native.country Portugal                   -1.480e+00  8.596e-01  -1.722
+    ## native.country Puerto-Rico                -1.800e+00  6.904e-01  -2.607
+    ## native.country Scotland                   -1.957e+00  1.063e+00  -1.840
+    ## native.country South                      -2.417e+00  6.967e-01  -3.469
+    ## native.country Taiwan                     -1.590e+00  7.272e-01  -2.186
+    ## native.country Thailand                   -2.194e+00  1.006e+00  -2.181
+    ## native.country Trinadad&Tobago            -1.953e+00  1.013e+00  -1.928
+    ## native.country United-States              -1.216e+00  5.858e-01  -2.076
+    ## native.country Vietnam                    -2.235e+00  8.033e-01  -2.782
+    ## native.country Yugoslavia                 -8.269e-01  8.774e-01  -0.942
+    ##                                           Pr(>|z|)    
+    ## (Intercept)                               8.08e-16 ***
+    ## age                                        < 2e-16 ***
+    ## workclass Local-gov                       1.27e-09 ***
+    ## workclass Private                         8.42e-07 ***
+    ## workclass Self-emp-inc                    0.095955 .  
+    ## workclass Self-emp-not-inc                 < 2e-16 ***
+    ## workclass State-gov                       3.01e-12 ***
+    ## workclass Without-pay                     0.945409    
+    ## fnlwgt                                    4.43e-06 ***
+    ## education 11th                            0.436659    
+    ## education 12th                            0.055908 .  
+    ## education 1st-4th                         0.368534    
+    ## education 5th-6th                         0.341741    
+    ## education 7th-8th                         0.018728 *  
+    ## education 9th                             0.262668    
+    ## education Assoc-acdm                      6.23e-15 ***
+    ## education Assoc-voc                        < 2e-16 ***
+    ## education Bachelors                        < 2e-16 ***
+    ## education Doctorate                        < 2e-16 ***
+    ## education HS-grad                         2.79e-08 ***
+    ## education Masters                          < 2e-16 ***
+    ## education Preschool                       0.918345    
+    ## education Prof-school                      < 2e-16 ***
+    ## education Some-college                    1.73e-14 ***
+    ## marital Married-AF-spouse                 8.77e-06 ***
+    ## marital Married-civ-spouse                6.79e-14 ***
+    ## marital Married-spouse-absent             0.865167    
+    ## marital Never-married                     2.42e-08 ***
+    ## marital Separated                         0.561557    
+    ## marital Widowed                           0.221520    
+    ## occupation Armed-Forces                   0.441618    
+    ## occupation Craft-repair                   0.386556    
+    ## occupation Exec-managerial                 < 2e-16 ***
+    ## occupation Farming-fishing                9.44e-13 ***
+    ## occupation Handlers-cleaners              1.99e-07 ***
+    ## occupation Machine-op-inspct              0.002052 ** 
+    ## occupation Other-service                  7.78e-16 ***
+    ## occupation Priv-house-serv                0.022478 *  
+    ## occupation Prof-specialty                 1.59e-11 ***
+    ## occupation Protective-serv                6.10e-06 ***
+    ## occupation Sales                          7.66e-05 ***
+    ## occupation Tech-support                   4.86e-09 ***
+    ## occupation Transport-moving               0.199116    
+    ## relationship Not-in-family                0.084413 .  
+    ## relationship Other-relative               0.064860 .  
+    ## relationship Own-child                    0.004195 ** 
+    ## relationship Unmarried                    0.346482    
+    ## relationship Wife                          < 2e-16 ***
+    ## sex Male                                   < 2e-16 ***
+    ## hours.per.week                             < 2e-16 ***
+    ## native.country Canada                     0.088800 .  
+    ## native.country China                      0.004765 ** 
+    ## native.country Columbia                   0.000200 ***
+    ## native.country Cuba                       0.087222 .  
+    ## native.country Dominican-Republic         0.003940 ** 
+    ## native.country Ecuador                    0.039383 *  
+    ## native.country El-Salvador                0.018952 *  
+    ## native.country England                    0.101862    
+    ## native.country France                     0.271686    
+    ## native.country Germany                    0.130686    
+    ## native.country Greece                     0.008129 ** 
+    ## native.country Guatemala                  0.073806 .  
+    ## native.country Haiti                      0.058415 .  
+    ## native.country Holand-Netherlands         0.990299    
+    ## native.country Honduras                   0.255750    
+    ## native.country Hong                       0.067648 .  
+    ## native.country Hungary                    0.111904    
+    ## native.country India                      0.005681 ** 
+    ## native.country Iran                       0.061347 .  
+    ## native.country Ireland                    0.310691    
+    ## native.country Italy                      0.327626    
+    ## native.country Jamaica                    0.023180 *  
+    ## native.country Japan                      0.125673    
+    ## native.country Laos                       0.047900 *  
+    ## native.country Mexico                     0.001347 ** 
+    ## native.country Nicaragua                  0.022754 *  
+    ## native.country Outlying-US(Guam-USVI-etc) 0.946461    
+    ## native.country Peru                       0.021024 *  
+    ## native.country Philippines                0.117635    
+    ## native.country Poland                     0.038103 *  
+    ## native.country Portugal                   0.085115 .  
+    ## native.country Puerto-Rico                0.009128 ** 
+    ## native.country Scotland                   0.065725 .  
+    ## native.country South                      0.000522 ***
+    ## native.country Taiwan                     0.028807 *  
+    ## native.country Thailand                   0.029210 *  
+    ## native.country Trinadad&Tobago            0.053803 .  
+    ## native.country United-States              0.037914 *  
+    ## native.country Vietnam                    0.005397 ** 
+    ## native.country Yugoslavia                 0.345966    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 33851  on 30161  degrees of freedom
+    ## Residual deviance: 21424  on 30072  degrees of freedom
+    ## AIC: 21604
+    ## 
+    ## Number of Fisher Scoring iterations: 13
+
+AIC appears to have risen, which is a sign of a worse fit.
+
+### Prediction the Test Set Results
+
+``` r
+prob_pred_3 = predict(fit_3, type = 'response', newdata = test[-14])
+y_pred_3 = ifelse(prob_pred_3 > 0.5, '>50K', '<=50K')
+
+cm_3 = table(test[, 14], y_pred_3)
+cm_3
+```
+
+    ##          y_pred_3
+    ##           <=50K  >50K
+    ##    <=50K. 10415   945
+    ##    >50K.   1616  2084
+
+### Computing the Accuracy and Error Rates
+
+``` r
+acc_3 = sum(diag(cm_3)) / sum(cm_3)
+acc_3
+```
+
+    ## [1] 0.8299469
+
+``` r
+err_3 = 1 - acc_3
+err_3
+```
+
+    ## [1] 0.1700531
+
+Accuracy rate has decreased to **82.99%** in this case.
+
+Model 4
+-------
+
+We will try feature transformation in this last model, by means of Principal Component Analysis (PCA). To prepare our datasets for this, we will need to create dummy variables.
+
+``` r
+# install.packages('dummies')
+library(dummies)
+```
+
+    ## dummies-1.5.6 provided by Decision Patterns
+
+``` r
+train_4 = dummy.data.frame(train, names = c('workclass','education', 'marital','occupation',
+                                            'relationship','race','sex','native.country'))
+test_4 = dummy.data.frame(test, names = c('workclass','education', 'marital','occupation',
+                                            'relationship','race','sex','native.country'))
+
+train_4_pca = prcomp(train_4[-104])
+test_4_pca = prcomp(test_4[-103])
+
+screeplot(train_4_pca, type = 'l', main = 'PCA for Model 4')
+```
+
+![](salary_files/figure-markdown_github/unnamed-chunk-17-1.png)
+
+``` r
+summary(train_4_pca)
+```
+
+    ## Importance of components:
+    ##                              PC1       PC2       PC3   PC4   PC5    PC6
+    ## Standard deviation     1.057e+05 7.406e+03 404.06991 13.26 11.67 0.8597
+    ## Proportion of Variance 9.951e-01 4.890e-03   0.00001  0.00  0.00 0.0000
+    ## Cumulative Proportion  9.951e-01 1.000e+00   1.00000  1.00  1.00 1.0000
+    ##                           PC7    PC8    PC9   PC10  PC11   PC12   PC13
+    ## Standard deviation     0.5582 0.5482 0.4821 0.4571 0.439 0.4211 0.3845
+    ## Proportion of Variance 0.0000 0.0000 0.0000 0.0000 0.000 0.0000 0.0000
+    ## Cumulative Proportion  1.0000 1.0000 1.0000 1.0000 1.000 1.0000 1.0000
+    ##                         PC14   PC15   PC16   PC17   PC18  PC19   PC20
+    ## Standard deviation     0.369 0.3481 0.3437 0.3354 0.3145 0.303 0.2918
+    ## Proportion of Variance 0.000 0.0000 0.0000 0.0000 0.0000 0.000 0.0000
+    ## Cumulative Proportion  1.000 1.0000 1.0000 1.0000 1.0000 1.000 1.0000
+    ##                          PC21   PC22   PC23   PC24   PC25   PC26   PC27
+    ## Standard deviation     0.2841 0.2703 0.2598 0.2397 0.2318 0.2254 0.2149
+    ## Proportion of Variance 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
+    ## Cumulative Proportion  1.0000 1.0000 1.0000 1.0000 1.0000 1.0000 1.0000
+    ##                          PC28   PC29   PC30   PC31   PC32   PC33   PC34
+    ## Standard deviation     0.2107 0.2083 0.1985 0.1899 0.1886 0.1854 0.1814
+    ## Proportion of Variance 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
+    ## Cumulative Proportion  1.0000 1.0000 1.0000 1.0000 1.0000 1.0000 1.0000
+    ##                          PC35   PC36   PC37   PC38   PC39  PC40   PC41
+    ## Standard deviation     0.1797 0.1776 0.1698 0.1642 0.1619 0.142 0.1404
+    ## Proportion of Variance 0.0000 0.0000 0.0000 0.0000 0.0000 0.000 0.0000
+    ## Cumulative Proportion  1.0000 1.0000 1.0000 1.0000 1.0000 1.000 1.0000
+    ##                          PC42   PC43   PC44   PC45  PC46   PC47   PC48
+    ## Standard deviation     0.1293 0.1237 0.1221 0.1178 0.115 0.1116 0.1041
+    ## Proportion of Variance 0.0000 0.0000 0.0000 0.0000 0.000 0.0000 0.0000
+    ## Cumulative Proportion  1.0000 1.0000 1.0000 1.0000 1.000 1.0000 1.0000
+    ##                           PC49    PC50    PC51    PC52    PC53    PC54
+    ## Standard deviation     0.09095 0.09028 0.07307 0.07207 0.06837 0.06381
+    ## Proportion of Variance 0.00000 0.00000 0.00000 0.00000 0.00000 0.00000
+    ## Cumulative Proportion  1.00000 1.00000 1.00000 1.00000 1.00000 1.00000
+    ##                           PC55    PC56    PC57    PC58    PC59   PC60
+    ## Standard deviation     0.05941 0.05804 0.05754 0.05604 0.05528 0.0541
+    ## Proportion of Variance 0.00000 0.00000 0.00000 0.00000 0.00000 0.0000
+    ## Cumulative Proportion  1.00000 1.00000 1.00000 1.00000 1.00000 1.0000
+    ##                           PC61    PC62    PC63    PC64    PC65    PC66
+    ## Standard deviation     0.05193 0.04921 0.04794 0.04681 0.04656 0.04582
+    ## Proportion of Variance 0.00000 0.00000 0.00000 0.00000 0.00000 0.00000
+    ## Cumulative Proportion  1.00000 1.00000 1.00000 1.00000 1.00000 1.00000
+    ##                           PC67    PC68    PC69   PC70    PC71    PC72
+    ## Standard deviation     0.04451 0.04386 0.04301 0.0404 0.03941 0.03868
+    ## Proportion of Variance 0.00000 0.00000 0.00000 0.0000 0.00000 0.00000
+    ## Cumulative Proportion  1.00000 1.00000 1.00000 1.0000 1.00000 1.00000
+    ##                           PC73    PC74    PC75    PC76    PC77    PC78
+    ## Standard deviation     0.03712 0.03559 0.03334 0.03298 0.03187 0.03117
+    ## Proportion of Variance 0.00000 0.00000 0.00000 0.00000 0.00000 0.00000
+    ## Cumulative Proportion  1.00000 1.00000 1.00000 1.00000 1.00000 1.00000
+    ##                           PC79    PC80    PC81   PC82    PC83    PC84
+    ## Standard deviation     0.03024 0.02974 0.02841 0.0273 0.02519 0.02477
+    ## Proportion of Variance 0.00000 0.00000 0.00000 0.0000 0.00000 0.00000
+    ## Cumulative Proportion  1.00000 1.00000 1.00000 1.0000 1.00000 1.00000
+    ##                           PC85    PC86    PC87    PC88    PC89    PC90
+    ## Standard deviation     0.02417 0.02372 0.02364 0.02319 0.02266 0.02149
+    ## Proportion of Variance 0.00000 0.00000 0.00000 0.00000 0.00000 0.00000
+    ## Cumulative Proportion  1.00000 1.00000 1.00000 1.00000 1.00000 1.00000
+    ##                           PC91 PC92    PC93    PC94     PC95     PC96
+    ## Standard deviation     0.02079 0.02 0.01917 0.01781 0.005818 1.05e-11
+    ## Proportion of Variance 0.00000 0.00 0.00000 0.00000 0.000000 0.00e+00
+    ## Cumulative Proportion  1.00000 1.00 1.00000 1.00000 1.000000 1.00e+00
+    ##                            PC97     PC98     PC99    PC100    PC101
+    ## Standard deviation     1.05e-11 1.05e-11 1.05e-11 1.05e-11 1.05e-11
+    ## Proportion of Variance 0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00
+    ## Cumulative Proportion  1.00e+00 1.00e+00 1.00e+00 1.00e+00 1.00e+00
+    ##                           PC102     PC103
+    ## Standard deviation     1.05e-11 7.278e-14
+    ## Proportion of Variance 0.00e+00 0.000e+00
+    ## Cumulative Proportion  1.00e+00 1.000e+00
+
+The first 2 principal components are sufficient to explain most, if not all of the variation in the variables. So we will use them for the fit.
+
+``` r
+# Joining PC1 and PC2 columns to the train_4 dataset
+train_4_pca_df = as.data.frame(train_4_pca$x)
+train_4$PC1 = train_4_pca_df$PC1
+train_4$PC2 = train_4_pca_df$PC2
+
+# Joining PC1 and PC2 columns to the test_4 dataset
+test_4_pca_df = as.data.frame(test_4_pca$x)
+test_4$PC1 = test_4_pca_df$PC1
+test_4$PC2 = test_4_pca_df$PC2
+
+fit_4 = suppressWarnings(glm(class ~ PC1 + PC2,
+                             family = 'binomial',
+                             data = train_4))
+
+summary(fit_4)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = class ~ PC1 + PC2, family = "binomial", data = train_4)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -4.9964  -0.6879  -0.6832  -0.6521   1.8616  
+    ## 
+    ## Coefficients:
+    ##               Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept) -9.670e-01  1.543e-02 -62.689   <2e-16 ***
+    ## PC1         -1.888e-07  1.353e-07  -1.395    0.163    
+    ## PC2          3.345e-04  8.916e-06  37.519   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 33851  on 30161  degrees of freedom
+    ## Residual deviance: 30698  on 30159  degrees of freedom
+    ## AIC: 30704
+    ## 
+    ## Number of Fisher Scoring iterations: 6
+
+### Prediction the Test Set Results
+
+``` r
+prob_pred_4 = predict(fit_4, type = 'response', newdata = test_4[c(104, 105)])
+y_pred_4 = ifelse(prob_pred_4 > 0.5, '>50K', '<=50K')
+
+cm_4 = table(test_4[, 103], y_pred_4)
+cm_4
+```
+
+    ##          y_pred_4
+    ##           <=50K  >50K
+    ##    <=50K. 11200   160
+    ##    >50K.   2970   730
+
+### Computing the Accuracy and Error Rates
+
+``` r
+acc_4 = sum(diag(cm_4)) / sum(cm_4)
+acc_4
+```
+
+    ## [1] 0.7921647
+
+``` r
+err_4 = 1 - acc_4
+err_4
+```
+
+    ## [1] 0.2078353
+
+Accuracy rate has decreased to **79.22%** for this model, which shows that feature transformation does not improve our results.
+
+Summary & Conclusion
+--------------------
+
+We have used the following models in our analysis to predict the *class* variable:
+
+-   Full Model (fit) - using **all** variables
+
+-   Model 1 (fit\_1) - using all **except** *race*
+
+-   Model 2 (fit\_2) - using all **except** *race* and *relationship*
+
+-   Model 3 (fit\_3) - using all **except** *race*, *capital.gain* and *capital.loss*
+
+-   Model 4 (fit\_4) - using 1st 2 components of PCA
+
+We can conclude that **Model 1** produces the best result, with the *race* variable excluded. This model has the highest accuracy rate of **84.77%**.
