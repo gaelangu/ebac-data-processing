@@ -1,4 +1,5 @@
-### Introduction
+Introduction
+------------
 
 We will be preparing the salary dataset, extracted from the 1994 US Census, for a logistic regression.
 
@@ -1152,7 +1153,7 @@ test_4_pca = prcomp(test_4[-103])
 screeplot(train_4_pca, type = 'l', main = 'PCA for Model 4')
 ```
 
-![](salary_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](data_processing_final_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 ``` r
 summary(train_4_pca)

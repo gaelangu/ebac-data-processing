@@ -1,16 +1,14 @@
 ---
 title: "Data Processing Assignment"
 author: "Gaelan Gu, Sunil Prakash, Wang Ruoshi, Yu Yue"
-output: 
-  md_document:
-    variant: markdown_github
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Introduction
+## Introduction
 We will be preparing the salary dataset, extracted from the 1994 US Census, for a logistic regression. 
 
 We will determine whether a person makes over 50k a year; *class* will be the dependent variable.
